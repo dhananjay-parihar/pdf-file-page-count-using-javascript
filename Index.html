@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8">
+  <title>PDF PAGE COUNTER</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.10.377/pdf.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.16.9/xlsx.full.min.js"></script>
+   <style>
+  
+ body {
+      font-family: Arial, sans-serif;
+      background-color: #f2f2f2;
+      margin: 0;
+      padding: 0;
+    }
+
+    h1 {
+      text-align: center;
+      margin-top: 20px;
+    }
+
+    input[type="file"] {
+      display: block;
+      margin: 10px 0px 10px 10px;
+    }
+
+    table {
+      border-collapse: collapse;
+      margin: 20px auto;
+      width: 80%;
+      max-width: 800px;
+      background-color: white;
+      box-shadow: 0px 0px 5px 0px rgba(0,0,0,0.1);
+    }
+
+    th, td {
+      border: 1px solid black;
+      padding: 10px;
+      text-align: center;
+    }
+
+    th {
+      background-color: #f2f2f2;
+      font-weight: bold;
+    }
+
+    tr:nth-child(even) {
+      background-color: #f2f2f2;
+    }
+
+    button {
+      display: block;
+      margin: 20px auto;
+      padding: 10px 20px;
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background-color: #3e8e41;
+    }
+
+    .flex-container {
+      display: flex;
+    margin-left: 100px;
+      flex-wrap: nowrap;
+      justify-content: space-evenly;
+      align-items: center;
+      align-content: center;
+      flex-direction: row;
+      margin-left: 100px;
+    }
+
+    .flex-container > * {
+      flex-basis: 18%;
+    }
+
+    #pdfTable {
+      margin-top: 10px;
+    }
+
+    #progressBar {
+      display: block;
+      margin: 20px auto;
+      width: 80%;
+      max-width: 800px;
+      height: 30px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      overflow: hidden;
+    }
+
+    #progressBar::-webkit-progress-bar {
+      background-color: #fff;
+      border-radius: 5px;
+    }
+
+    #progressBar::-webkit-progress-value {
+      background-color: #4CAF50;
+      border-radius: 5px;
+    }
+
+    #progressBar::-moz-progress-bar {
+      background-color: #4CAF50;
+      border-radius: 5px;
+    }
+  </style>
+</head>
+<body>
+
+
+
+ <h1>PDF FILE PAGE COUNTER</h1>
+
+ 
+<div class="flex-container">
+
+
+ <div>
+      <input type="file" id="files" accept=".pdf" name="files[]" multiple />
+    </div>
+
+ <div>
+      <button onclick="exportToExcel()">Export to Excel</button>
+    </div>
+	
+   
+   
+  </div>
+
+
+<div>
+  <progress id="progressBar" value="0" max="100"></progress>
+  </div>
+  
+  <table id="pdfTable">
+    <thead>
+      <tr>
+        <th>File Name</th>
+        <th>Page Count</th>
+        <th>File Size</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+ 
+
+ 
+  <script>
+
+//script by dhananjay parihar 23 march 2023
+    let inputElement = document.getElementById('files');
+    let table = document.getElementById('pdfTable');
+    let tableBody = table.getElementsByTagName('tbody')[0];
+    let progressBar = document.getElementById('progressBar');
+    let totalProgress = 0;
+
+    inputElement.onchange = function(event) {
+      let files = event.target.files;
+      for (let i = 0; i < files.length; i++) {
+        let file = files[i];
+        let fileReader = new FileReader();
+        fileReader.onload = createOnLoadFunction(file);
+        fileReader.readAsArrayBuffer(file);
+      }
+    };
+
+    function createOnLoadFunction(file) {
+      return function() {
+        let typedarray = new Uint8Array(this.result);
+        let loadingTask = pdfjsLib.getDocument(typedarray);
+        loadingTask.promise.then(pdf => {
+          let row = document.createElement('tr');
+          let fileName = document.createElement('td');
+          let numPages = document.createElement('td');
+          let fileSize = document.createElement('td');
+          fileName.textContent = file.name;
+          numPages.textContent = pdf.numPages;
+          fileSize.textContent = formatBytes(file.size);
+          row.appendChild(fileName);
+          row.appendChild(numPages);
+          row.appendChild(fileSize);
+          tableBody.appendChild(row);
+
+          totalProgress += 100 / inputElement.files.length;
+          progressBar.value = totalProgress;
+        });
+      };
+    }
+
+    function formatBytes(bytes, decimals = 2) {
+      if (bytes === 0) return '0 Bytes';
+      const k = 1024;
+      const dm = decimals < 0 ? 0 : decimals;
+      const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'];
+      const i = Math.floor(Math.log(bytes) / Math.log(k));
+      return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
+    }
+
+    function exportToExcel() {
+      // Convert table to worksheet
+      const worksheet = XLSX.utils.table_to_sheet(table);
+
+      // Create workbook and add worksheet
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, 'Sheet1');
+
+      // Export workbook as Excel file
+      XLSX.writeFile(workbook, 'files.xlsx');
+    }
+  </script>
+</body>
+</html>
