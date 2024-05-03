@@ -26,6 +26,20 @@
   <div class="container mt-4">
     <h1 class="text-center">PDF FILE PAGE COUNTER</h1>
     <h6 class="text-center">---Use the Mozilla Firefox browser for more than 100 PDFs for better performance..----</h6>
+
+ <table class="table table-bordered mt-4">
+      <tr>
+        <th>Total file count:</th>
+        <th>Total page count:</th>
+        <th>Total file size:</th>
+      </tr>
+      <tr id="totalsRow">
+        <td>0</td>
+        <td>0</td>
+        <td>0 KB</td>
+      </tr>
+    </table>
+
     <div class="row">
       <div class="col-md-6">
         <input type="file" class="form-control" id="files" accept=".pdf" name="files[]" multiple />
@@ -40,6 +54,8 @@
         <div id="progressBar" class="progress-bar" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">0%</div>
       </div>
     </div>
+
+   
 
     <table id="pdfTable" class="table table-bordered mt-4">
       <thead class="thead-light">
@@ -65,6 +81,7 @@
     let totalProgress = 0;
     let sortDirection = 1; // 1 for ascending, -1 for descending
     let sortColumn = '';
+    let totalFileSize = 0; // Initialize total file size
 
     inputElement.onchange = function (event) {
       let files = event.target.files;
@@ -87,12 +104,15 @@
           let fileSize = document.createElement('td');
           numPages.textContent = pdf.numPages;
           fileName.textContent = file.name;
-          fileSize.textContent = formatBytes(file.size);
+          let fileSizeInKB = file.size / 1024;
+          fileSize.textContent = fileSizeInKB.toFixed(2) + ' KB'; // Display file size in KB with 2 decimal places
           numPages.setAttribute('data-pages', pdf.numPages);
           numPages.addEventListener('click', function () {
             sortTable('numPages');
           });
-          
+
+          totalFileSize += file.size; // Add file size to total
+
           row.appendChild(fileName);
           row.appendChild(numPages);
           row.appendChild(fileSize);
@@ -101,12 +121,30 @@
           totalProgress += 100 / inputElement.files.length;
           progressBar.style.width = totalProgress + '%';
           progressBar.textContent = Math.round(totalProgress) + '%';
+
+          updateTotals(); // Update totals after each file is loaded
         });
       };
     }
 
-        function formatBytes(bytes) {
-    return Math.ceil(bytes / 1024) +"KB";
+    function updateTotals() {
+  let totalFileCount = inputElement.files.length;
+  let totalPages = 0;
+
+  for (let row of tableBody.rows) {
+    totalPages += parseInt(row.cells[1].getAttribute('data-pages'));
+  }
+
+  // Calculate total file size in different units
+  let totalSizeKB = totalFileSize / 1024;
+  let totalSizeMB = totalSizeKB / 1024;
+  let totalSizeGB = totalSizeMB / 1024;
+
+  let totalsRow = document.getElementById('totalsRow');
+  totalsRow.cells[0].textContent = totalFileCount;
+  totalsRow.cells[1].textContent = totalPages;
+  // Display total file size in KB with 2 decimal places
+  totalsRow.cells[2].textContent = totalSizeKB.toFixed(2) + ' KB (' + totalSizeMB.toFixed(2) + ' MB, ' + totalSizeGB.toFixed(2) + ' GB)';
 }
 
     function sortTable(columnName) {
@@ -158,6 +196,8 @@
 
       tableBody.innerHTML = '';
       rows.forEach(row => tableBody.appendChild(row));
+
+      updateTotals(); // Update totals after sorting
     }
 
     function updateSortIcon(header, direction) {
